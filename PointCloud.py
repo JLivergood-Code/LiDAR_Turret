@@ -45,12 +45,20 @@ def updateFrameForward(vis, pcd, points, state):
     pcd.points = o3d.utility.Vector3dVector(points[state['frame_i']][:, :3])
 
     # updates color
-    intensity = points[state['frame_i']][:, 3]
-    intensity_norm = (intensity - np.min(intensity)) / (np.ptp(intensity) + 1e-6)
-    # Apply a matplotlib colormap (e.g. 'viridis' or 'jet')
-    cmap = plt.get_cmap(COLOR_MAP)
-    colors = cmap(intensity_norm)[:, :3]  # Drop alpha channel
-    pcd.colors = o3d.utility.Vector3dVector(colors)
+    # intensity = points[state['frame_i']][:, 3]
+    # intensity_norm = (intensity - np.min(intensity)) / (np.ptp(intensity) + 1e-6)
+    # # Apply a matplotlib colormap (e.g. 'viridis' or 'jet')
+    # cmap = plt.get_cmap(COLOR_MAP)
+    # colors = cmap(intensity_norm)[:, :3]  # Drop alpha channel
+    # pcd.colors = o3d.utility.Vector3dVector(colors)
+    
+    print(f"\nProcessing Frame: {state['frame_i']}", end='')
+    # pcd = preprocessing(pcd, False)
+
+    proc_pcd = preprocessing(pcd, False)
+
+    pcd.points = proc_pcd.points
+    pcd.colors = proc_pcd.colors
 
     vis.update_geometry(pcd)
     vis.poll_events()
@@ -62,12 +70,17 @@ def updateFrameBack(vis, state, points, pcd):
     pcd.points = o3d.utility.Vector3dVector(points[state['frame_i']][:, :3])
     
     # updates color
-    intensity = points[state['frame_i']][:, 3]
-    intensity_norm = (intensity - np.min(intensity)) / (np.ptp(intensity) + 1e-6)
-    # Apply a matplotlib colormap (e.g. 'viridis' or 'jet')
-    cmap = plt.get_cmap(COLOR_MAP)
-    colors = cmap(intensity_norm)[:, :3]  # Drop alpha channel
-    pcd.colors = o3d.utility.Vector3dVector(colors)
+    # intensity = points[state['frame_i']][:, 3]
+    # intensity_norm = (intensity - np.min(intensity)) / (np.ptp(intensity) + 1e-6)
+    # # Apply a matplotlib colormap (e.g. 'viridis' or 'jet')
+    # cmap = plt.get_cmap(COLOR_MAP)
+    # colors = cmap(intensity_norm)[:, :3]  # Drop alpha channel
+    # pcd.colors = o3d.utility.Vector3dVector(colors)
+    print(f"\nProcessing Frame: {state['frame_i']}", end='')
+    proc_pcd = preprocessing(pcd, False)
+
+    pcd.points = proc_pcd.points
+    pcd.colors = proc_pcd.colors
 
     vis.update_geometry(pcd)
     vis.poll_events()
@@ -82,6 +95,19 @@ def remove_noise(pcd, nb_neighbors=20, std_ratio=2.0):
 
 def downsample(pcd, voxel_size=0.05):
     return pcd.voxel_down_sample(voxel_size=voxel_size)
+
+# ----------------------------------------------------
+# Ground Removal using RANSAC
+# ----------------------------------------------------
+def remove_ground(pcd, distance_threshold=0.1, ransac_n=3, num_iterations=1000):
+    plane_model, inliers = pcd.segment_plane(
+        distance_threshold=distance_threshold,
+        ransac_n=ransac_n,
+        num_iterations=num_iterations
+    )
+    ground = pcd.select_by_index(inliers)
+    objects = pcd.select_by_index(inliers, invert=True)
+    return ground, objects
 
 def cluster_and_display(pcd, eps=0.0075, min_points=10):
     """
@@ -102,8 +128,8 @@ def cluster_and_display(pcd, eps=0.0075, min_points=10):
         pcd.paint_uniform_color([1, 0, 0])  # fallback color
 
     # Show result
-    o3d.visualization.draw_geometries([pcd], window_name="Clustered Objects (Colored)")
-    return labels
+    # o3d.visualization.draw_geometries([pcd], window_name="Clustered Objects (Colored)")
+    return pcd, labels
 
 
 def normalize(pcd):
@@ -125,7 +151,7 @@ def show(title, *geoms):
 
     
 
-def preprocessing(pcd, visualize=True):
+def preprocessing(pcd, visualize=False):
     if visualize:
         show("Raw Point Cloud", pcd)
 
@@ -140,7 +166,7 @@ def preprocessing(pcd, visualize=True):
         show("After Downsampling", pcd)
 
     # 3. Ground removal
-    # # ground, objects = remove_ground(pcd)
+    # ground, objects = remove_ground(pcd)
     # if visualize:
     #     ground.paint_uniform_color([0.6, 0.6, 0.6])
     #     objects.paint_uniform_color([1, 0, 0])
@@ -152,22 +178,27 @@ def preprocessing(pcd, visualize=True):
         show("Normalized Objects", objects)
 
     # 5. (Optional) Clustering
-    labels = cluster_and_display(objects)
-    return labels
+    ret_pcd, labels = cluster_and_display(objects)
+    return ret_pcd
 
 def main():
 
-    pcap_file = './PCAP./test2.pcap'
+    pcap_file = './PCAP./hallway.pcap'
 
     pcd, points = load_points(pcap_file)
 
     vis = init_vis()
 
-    vis.add_geometry(pcd)
+    
 
     state = {'frame_i': 0}
 
-    labels = preprocessing(pcd, True)
+    proc_pcd = preprocessing(pcd, False)
+    # proc_pcd = preprocessing(pcd, False)
+
+    pcd.points = proc_pcd.points    
+    pcd.colors = proc_pcd.colors
+    vis.add_geometry(pcd)
 
     callbackForward = partial(updateFrameForward, pcd=pcd, points=points, state=state)
     callbackBack = partial(updateFrameBack, pcd=pcd, points=points, state=state)
