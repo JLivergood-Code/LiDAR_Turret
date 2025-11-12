@@ -6,7 +6,8 @@ import torch
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-from pointnet.dataset import ShapeNetDataset
+# from pointnet.dataset import ShapeNetDataset
+from lcas_dataset import LCASDataset
 from pointnet.model import PointNetDenseCls, feature_transform_regularizer
 import torch.nn.functional as F
 from tqdm import tqdm
