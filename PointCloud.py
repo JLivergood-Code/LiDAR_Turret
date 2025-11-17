@@ -1,6 +1,6 @@
 import open3d as o3d
 import numpy as np
-import os
+import os, sys
 import velodyne_decoder as vd
 import matplotlib.pyplot as plt 
 from functools import partial
@@ -8,8 +8,6 @@ from functools import partial
 # cwd = os.getcwd()
 
 COLOR_MAP = 'jet'
-
-
 
 # class PointCloud:
 # pcap_file = cwd + pcap_file
@@ -93,13 +91,22 @@ def remove_noise(pcd, nb_neighbors=20, std_ratio=2.0):
     )
     return filtered_pcd
 
-def downsample(pcd, voxel_size=0.05):
+def downsample(pcd, voxel_size=0.01
+               
+               
+               
+               
+               
+               
+               
+               
+               ):
     return pcd.voxel_down_sample(voxel_size=voxel_size)
 
 # ----------------------------------------------------
 # Ground Removal using RANSAC
 # ----------------------------------------------------
-def remove_ground(pcd, distance_threshold=0.1, ransac_n=3, num_iterations=1000):
+def remove_ground(pcd, distance_threshold=0.01, ransac_n=3, num_iterations=1000):
     plane_model, inliers = pcd.segment_plane(
         distance_threshold=distance_threshold,
         ransac_n=ransac_n,
@@ -141,7 +148,7 @@ def normalize(pcd):
     return pcd
 
 
-def crop_region(pcd, min_bound=(-5, -5, -1), max_bound=(5, 5, 3)):
+def crop_region(pcd, min_bound=(-5, -5, -5), max_bound=(5, 5, 5)):
     bbox = o3d.geometry.AxisAlignedBoundingBox(min_bound, max_bound)
     return pcd.crop(bbox)
 
@@ -160,20 +167,25 @@ def preprocessing(pcd, visualize=False):
     if visualize:
         show("After Noise Removal", pcd)
 
+    #2 Crop
+    cropped_pcd = crop_region(pcd, min_bound=(-30,-30,-2), max_bound=(30,30,1))
+
+
     # 2. Downsample
-    pcd = downsample(pcd, voxel_size=0.05)
+    pcd = downsample(cropped_pcd, voxel_size=0.05)
     if visualize:
         show("After Downsampling", pcd)
 
     # 3. Ground removal
-    # ground, objects = remove_ground(pcd)
-    # if visualize:
-    #     ground.paint_uniform_color([0.6, 0.6, 0.6])
-    #     objects.paint_uniform_color([1, 0, 0])
-    #     show("Ground (gray) and Objects (red)", ground, objects)
+    ground, objects = remove_ground(pcd, distance_threshold=0.1, num_iterations=500)
+    if visualize:
+        ground.paint_uniform_color([0.6, 0.6, 0.6])
+        objects.paint_uniform_color([1, 0, 0])
+        show("Ground (gray) and Objects (red)", ground, objects)
+
 
     # 4. Normalize
-    objects = normalize(pcd)
+    objects = normalize(objects)
     if visualize:
         show("Normalized Objects", objects)
 
@@ -183,7 +195,10 @@ def preprocessing(pcd, visualize=False):
 
 def main():
 
-    pcap_file = './PCAP./hallway.pcap'
+    if len(sys.argv) > 1:
+        pcap_file = sys.argv[1]
+    else:
+        pcap_file = '../PCAP/outside.pcap'
 
     pcd, points = load_points(pcap_file)
 
@@ -194,7 +209,9 @@ def main():
     state = {'frame_i': 0}
 
     proc_pcd = preprocessing(pcd, False)
-    # proc_pcd = preprocessing(pcd, False)
+
+    # mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
+
 
     pcd.points = proc_pcd.points    
     pcd.colors = proc_pcd.colors
