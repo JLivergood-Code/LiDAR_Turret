@@ -91,16 +91,7 @@ def remove_noise(pcd, nb_neighbors=20, std_ratio=2.0):
     )
     return filtered_pcd
 
-def downsample(pcd, voxel_size=0.01
-               
-               
-               
-               
-               
-               
-               
-               
-               ):
+def downsample(pcd, voxel_size=0.01):
     return pcd.voxel_down_sample(voxel_size=voxel_size)
 
 # ----------------------------------------------------

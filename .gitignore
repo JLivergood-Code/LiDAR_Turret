@@ -2,3 +2,4 @@ venv/
 *.pcap
 *.txt
 *.zip
+data/
