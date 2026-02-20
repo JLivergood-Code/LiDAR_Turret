@@ -9,6 +9,10 @@ from functools import partial
 
 COLOR_MAP = 'jet'
 
+CROP_X = (-30, 30)
+CROP_Y = (-30, 30)
+CROP_Z = (-2, 1)
+
 # class PointCloud:
 # pcap_file = cwd + pcap_file
 
@@ -149,7 +153,7 @@ def show(title, *geoms):
 
     
 
-def preprocessing(pcd, visualize=False):
+def preprocessing(pcd, visualize=False, cluster=False):
     if visualize:
         show("Raw Point Cloud", pcd)
 
@@ -159,7 +163,7 @@ def preprocessing(pcd, visualize=False):
         show("After Noise Removal", pcd)
 
     #2 Crop
-    cropped_pcd = crop_region(pcd, min_bound=(-30,-30,-2), max_bound=(30,30,1))
+    cropped_pcd = crop_region(pcd, min_bound=(CROP_X[0], CROP_Y[0], CROP_Z[0]), max_bound=(CROP_X[1], CROP_Y[1], CROP_Z[1]))
 
 
     # 2. Downsample
@@ -180,8 +184,9 @@ def preprocessing(pcd, visualize=False):
     if visualize:
         show("Normalized Objects", objects)
 
-    # 5. (Optional) Clustering
-    ret_pcd, labels = cluster_and_display(objects)
+    if cluster:
+        # 5. (Optional) Clustering
+        ret_pcd, labels = cluster_and_display(objects)
     return ret_pcd
 
 def main():

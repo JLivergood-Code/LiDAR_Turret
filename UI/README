@@ -1,0 +1,12 @@
+How to run the UI:
+
+Simply running pyUI.py should be enough to 
+
+REquirements:
+- Must use Python < 3.12
+- Open3D Window embedding is not supported on version > Python 3.12 
+
+run:
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
