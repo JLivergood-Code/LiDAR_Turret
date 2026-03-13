@@ -211,10 +211,10 @@ ApplicationWindow {
                 anchors.right: parent.right
                 anchors.top: pcdTitleRect1.bottom
                 anchors.bottom: parent.bottom
-                anchors.leftMargin: 15
-                anchors.rightMargin: 15
-                anchors.topMargin: 15
-                anchors.bottomMargin: 15
+                anchors.leftMargin: 5
+                anchors.rightMargin: 5
+                anchors.topMargin: 5
+                anchors.bottomMargin: 5
 
                 window: open3dWindow
                 focus: true
@@ -261,7 +261,7 @@ ApplicationWindow {
 
             BorderImage {
                 id: turret
-                source: "tank.png"
+                source: "turret.png"
                 width: 100
                 height: 100
                 border.left: 5

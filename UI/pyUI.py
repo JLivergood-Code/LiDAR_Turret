@@ -73,8 +73,15 @@ class Backend(QObject):
         self.setTargetDist("10m")
         self.setImgRotation(45)
 
-def main():
-    app = QApplication(sys.argv)
+    def updateFromBackend(self, humanDetected, turretAngle,targetDist):
+        self.setHumanDetected(humanDetected)
+        self.setTurretAngle(turretAngle)
+        self.setHumanAngle(turretAngle)
+        self.setTargetDist(targetDist)
+        self.setImgRotation(turretAngle)
+
+def loadQml(args):
+    app = QApplication(args)
 
     # Create your QWidget-based Open3DWidget as a *top-level native window*
     o3d_widget = Open3DWidget(parent=None)
@@ -106,6 +113,9 @@ def main():
         sys.exit(1)
 
     sys.exit(app.exec())
+
+def main():
+    loadQml(sys.argv)
 
 if __name__ == "__main__":
     main()
