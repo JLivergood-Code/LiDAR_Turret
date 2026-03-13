@@ -7,6 +7,8 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt
 
 from Open3DWidget import Open3DWidget  # your file
+import threading
+import time
 
 # Stuff for backend 
 # turretAngleText = "0°"
@@ -73,14 +75,19 @@ class Backend(QObject):
         self.setTargetDist("10m")
         self.setImgRotation(45)
 
-    def updateFromBackend(self, humanDetected, turretAngle,targetDist):
+    def updateFromBackend(self, humanDetected, turretAngle, targetDist):
+        if humanDetected.upper() == "NO":
+            result = 0
+        else:
+            result = ''.join(c for c in turretAngle if c.isdigit())
+
         self.setHumanDetected(humanDetected)
         self.setTurretAngle(turretAngle)
         self.setHumanAngle(turretAngle)
         self.setTargetDist(targetDist)
-        self.setImgRotation(turretAngle)
+        self.setImgRotation(int(result))
 
-def loadQml(args):
+def loadQml(args, backend):
     app = QApplication(args)
 
     # Create your QWidget-based Open3DWidget as a *top-level native window*
@@ -100,7 +107,7 @@ def loadQml(args):
 
 
     engine = QQmlApplicationEngine()
-    backend = Backend()
+    # backend = Backend()
 
     engine.rootContext().setContextProperty("backend", backend)
     engine.rootContext().setContextProperty("open3dWindow", o3d_window)
@@ -115,7 +122,40 @@ def loadQml(args):
     sys.exit(app.exec())
 
 def main():
-    loadQml(sys.argv)
+    backend = Backend()
+
+    def input_loop():
+        time.sleep(1)  # Give Qt time to initialize
+        while True:
+            raw = input("\nEnter target distance and angle (e.g. 'Yes 10m 45°'): ").strip()
+            if not raw:
+                continue
+            parts = raw.split()
+            if parts[0].upper() != "NO" and len(parts) != 3:
+                print("Invalid format. Use: <detected> <distance> <angle>  e.g. 'Yes 10m 45'")
+                continue
+            if parts[0].upper() not in ["YES", "NO"]:
+                print("Invalid detected value. Use: 'Yes' or 'No'")
+                continue
+            if len(parts) ==3:
+                detected, distance, angle = parts
+            else:
+                detected = parts[0]
+                distance = "0m"
+                angle = "0°"
+            
+            if not angle.endswith("°"):
+                angle += "°"
+
+            backend.updateFromBackend(detected, angle, distance)
+
+    t = threading.Thread(target=input_loop, daemon=True)
+    t.start()
+
+    loadQml(sys.argv, backend)  # Runs on main thread, blocks until Qt closes
+    print(f"Qt app exited, waiting for input thread to finish...")
+    t.join()
+
 
 if __name__ == "__main__":
     main()
